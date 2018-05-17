@@ -1,0 +1,11 @@
+spark-submit --jar additional1.jar,additional2.jar \
+  --driver-library-path additional1.jar:additional2.jar \
+  --conf spark.executor.extraLibraryPath=additional1.jar:additional2.jar \
+  --class MyClass main-application.jar
+  
+  spark-submit --class com.WordCount.DataFrameExample D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
+  
+  spark-submit --class com.WordCount.LinearRegressionTitanic D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
+  
+  spark-submit --class com.WordCount.KMean --jars D:\bigdata\spark\testdata\spark-cassandra-connector_2.11-2.0.2.jar,D:\bigdata\spark\testdata\jsr166e-1.1.0.jar D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
+  
