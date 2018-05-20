@@ -13,7 +13,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
 
-object LinearRegressionTitanic {
+object LogisticRegressionSample {
   
   case class TitanicData(PassengerId:String, Survived:String, Pclass:String, 
       Name:String, Sex:String, Age:String, SibSp:String, Parch:String, 

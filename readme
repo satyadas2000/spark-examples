@@ -3,6 +3,8 @@ spark-submit --jar additional1.jar,additional2.jar \
   --conf spark.executor.extraLibraryPath=additional1.jar:additional2.jar \
   --class MyClass main-application.jar
   
+  https://stackoverflow.com/questions/17552457/how-do-i-upload-eclipse-projects-to-github
+  
   spark-submit --class com.WordCount.DataFrameExample D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
   
   spark-submit --class com.WordCount.LinearRegressionTitanic D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
