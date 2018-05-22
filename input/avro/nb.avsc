@@ -1,0 +1,19 @@
+{
+    "namespace": "kakfa-avro.nb.predict",
+     "type": "record",
+     "name": "iris",
+     "fields":[
+         {
+            "name": "sepal_length", "type": "double"
+         },
+         {
+            "name": "sepal_width",  "type": "double"
+         },
+         {
+            "name": "petal_length", "type": "double"
+         },
+		 {
+            "name": "petal_width", "type": "double"
+         }
+     ]
+}
