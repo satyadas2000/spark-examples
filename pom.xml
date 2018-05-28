@@ -70,6 +70,12 @@
         <version>2.2.0</version>
     </dependency>
 
+<!-- https://mvnrepository.com/artifact/com.crealytics/spark-excel -->
+<dependency>
+    <groupId>com.crealytics</groupId>
+    <artifactId>spark-excel_2.11</artifactId>
+    <version>0.8.3</version>
+</dependency>
 
     
     <dependency>
