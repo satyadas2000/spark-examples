@@ -19,4 +19,4 @@ spark-submit --jar additional1.jar,additional2.jar \
   
   spark-submit --class com.WordCount.NaiveBayesTest D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
   
-  spark-submit --class com.WordCount.ReadMultipleExcel --jars D:\bigdata\spark\testdata\avro-1.7.7.jar,D:\bigdata\spark\testdata\spark-sql-kafka-0-10_2.11-2.2.0.jar,D:\bigdata\spark\testdata\kafka-clients-0.10.0.0.jar,D:\bigdata\spark\testdata\spark-excel_2.11-0.8.3.jar D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar
+  spark-submit --class com.ml.LoanApplicationModeling  D:\bigdata\spark\testdata\WordCount-0.0.1-SNAPSHOT.jar

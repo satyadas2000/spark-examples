@@ -41,6 +41,7 @@ object LogisticRegressionSample {
     
     var trainDF = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("D:\\bigdata\\spark\\testdata\\titanic\\train.csv").cache()
     
+    //fill nan values
     var avgAge = trainDF.select(mean("Age")).first()(0).asInstanceOf[Double]
     trainDF=trainDF.na.fill(avgAge, Seq("Age"))
     
