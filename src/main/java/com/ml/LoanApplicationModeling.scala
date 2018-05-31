@@ -14,6 +14,10 @@ import org.apache.spark.ml.tuning.CrossValidator
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.evaluation.RegressionMetrics
 import org.apache.spark.ml.classification.RandomForestClassifier
+import org.apache.spark.ml.classification.DecisionTreeClassifier
+import org.apache.spark.ml.classification.DecisionTreeClassificationModel
+import org.apache.spark.ml.classification.RandomForestClassificationModel
+import org.apache.spark.ml.classification.LogisticRegressionModel
 
 object LoanApplicationModeling {
 	def main(args: Array[String]){
@@ -22,6 +26,9 @@ object LoanApplicationModeling {
 		val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 		import sqlContext.implicits._
 
+		//data received from
+		//https://www.analyticsvidhya.com/blog/2016/01/complete-tutorial-learn-data-science-python-scratch-2/
+		
 		var df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("D:\\bigdata\\spark\\testdata\\loan\\train_u6lujuX_CVtuZ9i.csv").cache()
 
 		//df.filter(df("Self_Employed").isNull || df("Self_Employed") === "" || df("Self_Employed").isNaN).count()
@@ -111,10 +118,11 @@ object LoanApplicationModeling {
 		
 		         println("****************************************************************LogisticRegression accuracy : " + accuracy)
 		         println("area under the receiver operating characteristic (ROC) curve : " + metrics.areaUnderROC)
-		         
-		         pipelineFittedModel.bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(0).extractParamMap 
-             println("The best fitted model:" + pipelineFittedModel.bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(0).extractParamMap ) 
-		         
+	
+		        val bestModel = pipelineFittedModel.bestModel
+            val treeModel = bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(7).asInstanceOf[LogisticRegressionModel]
+            println("Learned classification tree model:\n" + treeModel.toString())
+		
 		         val rm = new RegressionMetrics(predictions.select("prediction", "label").rdd.map(x => (x(0).asInstanceOf[Double], x(1).asInstanceOf[Double]))) 
              println("MSE: " + rm.meanSquaredError) 
              println("MAE: " + rm.meanAbsoluteError) 
@@ -164,8 +172,8 @@ object LoanApplicationModeling {
 		         println("area under the receiver operating characteristic (ROC) curve : " + metrics1.areaUnderROC)
 		         
 		         pipelineFittedModel1.bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(0).extractParamMap 
-             println("The best fitted model:" + pipelineFittedModel1.bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(0).extractParamMap ) 
-		         
+             println("The best fitted model:" + pipelineFittedModel1.bestModel.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(7).asInstanceOf[RandomForestClassificationModel] ) 
+
 		         val rm1 = new RegressionMetrics(predictions1.select("prediction", "label").rdd.map(x => (x(0).asInstanceOf[Double], x(1).asInstanceOf[Double]))) 
              println("MSE: " + rm1.meanSquaredError) 
              println("MAE: " + rm1.meanAbsoluteError) 
@@ -174,6 +182,45 @@ object LoanApplicationModeling {
              println("Explained Variance: " + rm1.explainedVariance + "\n")
 		
 
+             // Now test with DecisionTree
+             
+             val lr2 = new DecisionTreeClassifier().setLabelCol("label").setFeaturesCol("features")
+             val paramGrid2 = new ParamGridBuilder().addGrid(lr2.maxDepth,Array(2, 3, 4, 5, 6, 7)).build()
+             
+             val pipeline2 = new Pipeline().setStages(Array(stringIndexer_label,Gender_ix, Married_ix,Self_Employed_ix,Education_ix,Property_Area_ix,assembler,lr2))
+          
+          		val splits2 = df.randomSplit(Array(0.8,0.2), seed=24L)
+          		val trainDF2 = splits(0).cache()
+          		val testDF2 = splits(1).cache()
+              
+
+          		val cv2 = new CrossValidator().setEstimator(pipeline2).setEvaluator(evaluator).setEstimatorParamMaps(paramGrid2).setNumFolds(10) 
+
+          		val pipelineFittedModel2 = cv2.fit(trainDF2)
+          		val predictions2 = pipelineFittedModel2.transform(testDF2)
+              val accuracy2 = evaluator.evaluate(predictions2) 
+              
+              
+              
+              val predictionAndLabels2 =predictions2.select("prediction", "label").rdd.map(x =>
+                (x(0).asInstanceOf[Double], x(1).asInstanceOf[Double]))
+              val metrics2 = new BinaryClassificationMetrics(predictionAndLabels2)
+		
+		         println("****************************************************************DecisionTreeClassifier accuracy : " + accuracy2)
+		         println("area under the receiver operating characteristic (ROC) curve : " + metrics2.areaUnderROC)
+		         
+		         val bestModel2 = pipelineFittedModel2.bestModel
+             val treeModel2 = bestModel2.asInstanceOf[org.apache.spark.ml.PipelineModel].stages(7).asInstanceOf[DecisionTreeClassificationModel]
+             println("Learned classification tree model:\n" + treeModel2.toDebugString)
+
+		         val rm2 = new RegressionMetrics(predictions2.select("prediction", "label").rdd.map(x => (x(0).asInstanceOf[Double], x(1).asInstanceOf[Double]))) 
+             println("MSE: " + rm2.meanSquaredError) 
+             println("MAE: " + rm2.meanAbsoluteError) 
+             println("RMSE Squared: " + rm2.rootMeanSquaredError) 
+             println("R Squared: " + rm2.r2) 
+             println("Explained Variance: " + rm2.explainedVariance + "\n")
+            
+             
 
 	}
 }
