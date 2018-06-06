@@ -18,8 +18,19 @@ import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.classification.DecisionTreeClassificationModel
 import org.apache.spark.ml.classification.RandomForestClassificationModel
 import org.apache.spark.ml.classification.LogisticRegressionModel
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
+import org.apache.spark.ml.param.IntArrayParam
+import org.apache.spark.ml.param.Param
+import org.apache.spark.ml.param.Param
+import org.apache.spark.ml.classification.MultilayerPerceptronClassificationModel
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
 
 object LoanApplicationModeling {
+  val rootLogger = Logger.getRootLogger()
+    //rootLogger.setLevel(Level.INFO)
+    
 	def main(args: Array[String]){
 		val conf = new SparkConf().setAppName("test");
 		val sc=new SparkContext(conf);
@@ -90,7 +101,9 @@ object LoanApplicationModeling {
 
 								val assembler = new VectorAssembler().setInputCols(Array("Gender_ix","Married_ix","Self_Employed_ix","Education_ix","Property_Area_ix","TotalIncome","LoanAmount","Credit_History","Loan_Amount_Term")).setOutputCol("features")
 
-         //First we will check for LogisticRegression
+                val evaluator = new BinaryClassificationEvaluator().setLabelCol("label")
+                
+								//First we will check for LogisticRegression
 								
 							val lr = new LogisticRegression().setLabelCol("label").setFeaturesCol("features").setMaxIter(10)
 
@@ -102,7 +115,7 @@ object LoanApplicationModeling {
           		val trainDF = splits(0).cache()
           		val testDF = splits(1).cache()
               
-          		val evaluator = new BinaryClassificationEvaluator().setLabelCol("label")
+          		
 
           		val cv = new CrossValidator().setEstimator(pipeline).setEvaluator(evaluator).setEstimatorParamMaps(paramGrid).setNumFolds(10) 
 
@@ -129,7 +142,12 @@ object LoanApplicationModeling {
              println("RMSE Squared: " + rm.rootMeanSquaredError) 
              println("R Squared: " + rm.r2) 
              println("Explained Variance: " + rm.explainedVariance + "\n")
+             val metricsConfustion = new MulticlassMetrics(predictionAndLabels)
+             rootLogger.info("Confusion matrix Linear Regression:"+metricsConfustion.confusionMatrix)
              
+             // val metricsConfustion = new MulticlassMetrics(predictionAndLabels)
+             // println("Confusion matrix Linear Regression:"+metricsConfustion.confusionMatrix)
+            
              //now we will try for Random Forest Classifier
              
              	val lr1 = new RandomForestClassifier().setImpurity("gini") 
@@ -152,15 +170,15 @@ object LoanApplicationModeling {
 							val pipeline1 = new Pipeline().setStages(Array(stringIndexer_label,Gender_ix, Married_ix,Self_Employed_ix,Education_ix,Property_Area_ix,assembler,lr1))
           
           		val splits1 = df.randomSplit(Array(0.8,0.2), seed=24L)
-          		val trainDF1 = splits(0).cache()
-          		val testDF1 = splits(1).cache()
-              
+          		val trainDF1 = splits1(0).cache()
+          		val testDF1 = splits1(1).cache()
+              val evaluator1 = new BinaryClassificationEvaluator().setLabelCol("label")
 
-          		val cv1 = new CrossValidator().setEstimator(pipeline1).setEvaluator(evaluator).setEstimatorParamMaps(paramGrid1).setNumFolds(10) 
+          		val cv1 = new CrossValidator().setEstimator(pipeline1).setEvaluator(evaluator1).setEstimatorParamMaps(paramGrid1).setNumFolds(10) 
 
           		val pipelineFittedModel1 = cv1.fit(trainDF1)
           		val predictions1 = pipelineFittedModel1.transform(testDF1)
-              val accuracy1 = evaluator.evaluate(predictions1) 
+              val accuracy1 = evaluator1.evaluate(predictions1) 
               
               
               
@@ -180,31 +198,35 @@ object LoanApplicationModeling {
              println("RMSE Squared: " + rm1.rootMeanSquaredError) 
              println("R Squared: " + rm1.r2) 
              println("Explained Variance: " + rm1.explainedVariance + "\n")
-		
+             
+              val metricsConfustion1 = new MulticlassMetrics(predictionAndLabels1)
+              println("Confusion matrix Random Forest:"+metricsConfustion1.confusionMatrix)
+		          rootLogger.info("Confusion matrix Random Forest:"+metricsConfustion1.confusionMatrix)
 
              // Now test with DecisionTree
              
-             val lr2 = new DecisionTreeClassifier().setLabelCol("label").setFeaturesCol("features")
+           val lr2 = new DecisionTreeClassifier().setLabelCol("label").setFeaturesCol("features")
              val paramGrid2 = new ParamGridBuilder().addGrid(lr2.maxDepth,Array(2, 3, 4, 5, 6, 7)).build()
              
              val pipeline2 = new Pipeline().setStages(Array(stringIndexer_label,Gender_ix, Married_ix,Self_Employed_ix,Education_ix,Property_Area_ix,assembler,lr2))
           
           		val splits2 = df.randomSplit(Array(0.8,0.2), seed=24L)
-          		val trainDF2 = splits(0).cache()
-          		val testDF2 = splits(1).cache()
-              
+          		val trainDF2 = splits2(0).cache()
+          		val testDF2 = splits2(1).cache()
+              val evaluator2 = new BinaryClassificationEvaluator().setLabelCol("label")
 
-          		val cv2 = new CrossValidator().setEstimator(pipeline2).setEvaluator(evaluator).setEstimatorParamMaps(paramGrid2).setNumFolds(10) 
+          		val cv2 = new CrossValidator().setEstimator(pipeline2).setEvaluator(evaluator2).setEstimatorParamMaps(paramGrid2).setNumFolds(10) 
 
           		val pipelineFittedModel2 = cv2.fit(trainDF2)
           		val predictions2 = pipelineFittedModel2.transform(testDF2)
-              val accuracy2 = evaluator.evaluate(predictions2) 
+              val accuracy2 = evaluator2.evaluate(predictions2) 
               
               
               
               val predictionAndLabels2 =predictions2.select("prediction", "label").rdd.map(x =>
                 (x(0).asInstanceOf[Double], x(1).asInstanceOf[Double]))
               val metrics2 = new BinaryClassificationMetrics(predictionAndLabels2)
+		         
 		
 		         println("****************************************************************DecisionTreeClassifier accuracy : " + accuracy2)
 		         println("area under the receiver operating characteristic (ROC) curve : " + metrics2.areaUnderROC)
@@ -219,8 +241,15 @@ object LoanApplicationModeling {
              println("RMSE Squared: " + rm2.rootMeanSquaredError) 
              println("R Squared: " + rm2.r2) 
              println("Explained Variance: " + rm2.explainedVariance + "\n")
-            
              
+              val metricsConfustion2 = new MulticlassMetrics(predictionAndLabels2)
+              println("Confusion matrix DecisionTree:"+metricsConfustion2.confusionMatrix)
+              rootLogger.info("Confusion matrix DecisionTree:"+metricsConfustion2.confusionMatrix)
+
+ 
+        
+              
+              
 
 	}
 }
